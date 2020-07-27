@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Identity;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -16,11 +18,24 @@ namespace ALTNETMSIDemo
             CreateHostBuilder(args).Build().Run();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+        public static IWebHostBuilder CreateHostBuilder(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, config) =>
                 {
-                    webBuilder.UseStartup<Startup>();
-                });
+                    var builtConfig = config.Build();
+                    var clientId = builtConfig["ClientId"];
+
+                    var managedIdentityCredential = string.IsNullOrEmpty(clientId)
+                        ? new ManagedIdentityCredential()
+                        : new ManagedIdentityCredential(clientId);
+
+                    var credential = new ChainedTokenCredential(
+                                        new VisualStudioCredential(),
+                                        new AzureCliCredential(),
+                                        managedIdentityCredential);
+
+                    config.AddAzureKeyVault(new Uri(builtConfig["KeyVaultUrl"]), credential);
+                })
+               .UseStartup<Startup>();
     }
 }

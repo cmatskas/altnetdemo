@@ -10,15 +10,13 @@ namespace ALTNETMSIDemo.Pages
     public class KeyVaultSecretsModel : PageModel
     {
 
-        private readonly ILogger<KeyVaultSecretsModel> _logger;
         private readonly IConfiguration configuration;
         public string FromKeyVault { get; set; }
         public string FromConfig { get; set; }
 
-        public KeyVaultSecretsModel(ILogger<KeyVaultSecretsModel> logger, IConfiguration config)
+        public KeyVaultSecretsModel(IConfiguration config)
         {
             configuration = config;
-            _logger = logger;
         }
         public void OnGet()
         {
@@ -33,10 +31,12 @@ namespace ALTNETMSIDemo.Pages
                 new AzureCliCredential(), 
                 managedIdentityCredential);
 
-            //KVSercret
             var client = new SecretClient(vaultUri: new Uri(configuration["KeyVaultUrl"]), credential: credential);
             // Retrieve a secret using the secret client.
             FromKeyVault = client.GetSecret("KVSercret").Value.Value;
+
+            // Retrive secret from config stored in Key Vault
+            FromConfig = configuration["SomeConfigValueFromKV"];
             
         }
     }
